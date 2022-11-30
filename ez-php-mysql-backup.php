@@ -307,6 +307,9 @@ class EzPhpMysqlBackUp
      */
     public function obfPrint($msg = '', $lineBreaksBefore = 0, $lineBreaksAfter = 1)
     {
+        if ($this->ezpmb_download)
+            return;
+
         if ($msg != 'OK' and $msg != 'KO')
             $msg = date("Y-m-d H:i:s") . ' - ' . $msg;
 
@@ -350,10 +353,15 @@ class EzPhpMysqlBackUp
 
     public function getBackupFilePath()
     {
+        return $this->getBackupDir() . '/' . $this->getBackupFileName();
+    }
+
+    public function getBackupFileName()
+    {
         if ($this->ezpmb_gzip) {
-            return $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name . '.gz';
+            return $this->ezpmb_backup_file_name . '.gz';
         } else
-            return $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
+            return $this->ezpmb_backup_file_name;
     }
 
     public function getBackupDir()
