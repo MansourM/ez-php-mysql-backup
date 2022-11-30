@@ -27,7 +27,7 @@ if(!$changed){
 $result = $backupDatabase->backupTables($changed) ? 'OK' : 'KO';
 */
 
-$backupDatabase->obfPrint('Backup result: ' . $result, 1);
+$backupDatabase->obfPrint("Backup result: $result", 1);
 
 // Use $output variable for further processing, for example to send it by email
 $output = $backupDatabase->getOutput();

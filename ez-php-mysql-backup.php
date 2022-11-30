@@ -118,11 +118,9 @@ class EzPhpMysqlBackUp
             if ($this->ezpmb_disable_foreign_key_checks === true)
                 $sql .= "SET foreign_key_checks = 0;\n\n";
 
-            /**
-             * Iterate tables
-             */
+
             foreach ($tables as $table) {
-                $this->obfPrint("Backing up `" . $table . "` table..." . str_repeat('.', 50 - strlen($table)), 0, 0);
+                $this->obfPrint("Backing up `$table` table..." . str_repeat('.', 50 - strlen($table)), 0, 0);
 
                 /**
                  * CREATE TABLE
@@ -148,6 +146,9 @@ class EzPhpMysqlBackUp
                     $realBatchSize = mysqli_num_rows($result); // Last batch size can be different from $this->batchSize
                     $numFields = mysqli_num_fields($result);
 
+                    //TODO i dont think this check is required
+                    // unless we are trying to count for changes while backup process is running
+                    // in that case we need to be way more careful and and a lot more checks and stuff
                     if ($realBatchSize !== 0) {
                         $sql .= 'INSERT INTO `' . $table . '` VALUES ';
 
@@ -174,17 +175,15 @@ class EzPhpMysqlBackUp
                                         $sql .= 'NULL';
                                     }
 
-                                    if ($j < ($numFields - 1)) {
+                                    if ($j < ($numFields - 1))
                                         $sql .= ',';
-                                    }
                                 }
 
                                 if ($rowCount == $realBatchSize) {
                                     $rowCount = 0;
                                     $sql .= ");\n"; //close the insert statement
-                                } else {
+                                } else
                                     $sql .= "),\n"; //close the row
-                                }
 
                                 $rowCount++;
                             }
@@ -230,23 +229,20 @@ class EzPhpMysqlBackUp
             /**
              * Re-enable foreign key checks
              */
-            //TODO: is it possible that this is wrong? maybe db had turned it off before by defualt?
-            if ($this->ezpmb_disable_foreign_key_checks === true) {
+            //TODO: is it possible that this is wrong? maybe db had turned it off before by default?
+            if ($this->ezpmb_disable_foreign_key_checks === true)
                 $sql .= "SET foreign_key_checks = 1;\n";
-            }
 
             $this->saveFile($sql);
 
-            if ($this->ezpmb_gzip) {
+            if ($this->ezpmb_gzip)
                 $this->gzipBackupFile();
-            } else {
-                $this->obfPrint('Backup file succesfully saved to ' . $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name, 1, 1);
-            }
+            else
+                $this->obfPrint("Backup file succesfully saved to $this->ezpmb_backup_dir/$this->ezpmb_backup_file_name", 1, 1);
         } catch (Exception $e) {
             print_r($e->getMessage());
             return false;
         }
-
         return true;
     }
 
@@ -259,10 +255,8 @@ class EzPhpMysqlBackUp
         if (!$sql) return false;
 
         try {
-
-            if (!file_exists($this->ezpmb_backup_dir)) {
+            if (!file_exists($this->ezpmb_backup_dir))
                 mkdir($this->ezpmb_backup_dir, 0777, true);
-            }
 
             file_put_contents($this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name, $sql, FILE_APPEND | LOCK_EX);
 
@@ -270,7 +264,6 @@ class EzPhpMysqlBackUp
             print_r($e->getMessage());
             return false;
         }
-
         return true;
     }
 
@@ -282,21 +275,18 @@ class EzPhpMysqlBackUp
      */
     protected function gzipBackupFile($level = 9)
     {
-        if (!$this->ezpmb_gzip) {
-            return true;
-        }
+        if (!$this->ezpmb_gzip) return true;
 
         $source = $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
         $dest = $source . '.gz';
 
-        $this->obfPrint('Gzipping backup file to ' . $dest . '... ', 1, 0);
+        $this->obfPrint("Gzipping backup file to $dest ... ", 1, 0);
 
         $mode = 'wb' . $level;
         if ($fpOut = gzopen($dest, $mode)) {
             if ($fpIn = fopen($source, 'rb')) {
-                while (!feof($fpIn)) {
+                while (!feof($fpIn))
                     gzwrite($fpOut, fread($fpIn, 1024 * 256));
-                }
                 fclose($fpIn);
             } else
                 return false;
@@ -358,11 +348,7 @@ class EzPhpMysqlBackUp
         return $this->output;
     }
 
-    /**
-     * Returns name of backup file
-     *
-     */
-    public function getBackupFile()
+    public function getBackupFilePath()
     {
         if ($this->ezpmb_gzip) {
             return $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name . '.gz';
@@ -370,10 +356,6 @@ class EzPhpMysqlBackUp
             return $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
     }
 
-    /**
-     * Returns backup directory path
-     *
-     */
     public function getBackupDir()
     {
         return $this->ezpmb_backup_dir;
@@ -385,14 +367,14 @@ class EzPhpMysqlBackUp
      */
     public function getChangedTables($since = '1 day')
     {
-        $query = "SELECT TABLE_NAME,update_time FROM information_schema.tables WHERE table_schema='" . $this->db_name . "'";
+        $query = "SELECT TABLE_NAME,update_time FROM information_schema.tables WHERE table_schema='$this->db_name'";
 
         $result = $this->conn->query($query);
-        while ($row = mysqli_fetch_assoc($result)) {
+        while ($row = mysqli_fetch_assoc($result))
             $resultset[] = $row;
-        }
-        if (empty($resultset))
-            return false;
+
+        if (empty($resultset)) return false;
+
         $tables = [];
         for ($i = 0; $i < count($resultset); $i++) {
             if (in_array($resultset[$i]['TABLE_NAME'], IGNORE_TABLES)) // ignore this table
