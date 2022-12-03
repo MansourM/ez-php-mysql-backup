@@ -5,10 +5,10 @@ class EzPhpMysqlBackUp
 {
     private static $instance;
     private $config;
-    private mysqli $conn;
+    private $conn;
     private $log;
 
-    public static int $DOT_LENGTH = 60;
+    public static $DOT_LENGTH = 60;
 
     public static function getInstance($config = null)
     {
@@ -391,7 +391,7 @@ class EzPhpMysqlBackUp
 
     private function obfPrint($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
     {
-        $this->ezPrint(false, $msg, $attachCurrentTimeStamp, $lineBreaks,);
+        $this->ezPrint(false, $msg, $attachCurrentTimeStamp, $lineBreaks);
     }
 
     private function obfPrintError($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
