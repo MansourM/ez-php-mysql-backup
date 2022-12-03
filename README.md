@@ -28,64 +28,41 @@ Simply upload myphp-backup.php script to the DocumentRoot directory of your web 
 
 ### :bangbang: Prerequisites
 
-This project uses Yarn as package manager
-
-```bash
- npm install --global yarn
-```
-
-<!-- Installation -->
-
-### :gear: Installation
-
-Install my-project with npm
-
-```bash
-  yarn install my-project
-  cd my-project
-```
-
-<!-- Run Locally -->
-
-### :running: Run Locally
-
-Clone the project
-
-```bash
-  git clone https://github.com/Louis3797/awesome-readme-template.git
-```
-
-Go to the project directory
-
-```bash
-  cd my-project
-```
-
-Install dependencies
-
-```bash
-  yarn install
-```
-
-Start the server
-
-```bash
-  yarn start
-```
+It requires PHP 5.4 or later.
 
 <!-- Usage -->
 
 ## :eyes: Usage
 
-Use this space to tell a little more about your project and how it can be used. Show additional screenshots, code
-samples, demos or link to other resources.
+add the library to your code
 
-```javascript
-import Component from 'my-project'
+```php
+<?php
+// Optional - Report all errors
+error_reporting(E_ALL);
+// Optional - Set script max execution time
+set_time_limit(900); // 15 minutes
+// Import the lib
+require_once "ez-php-mysql-backup.php";
+```
+Initialize
 
-function App() {
-    return <Component/>
-}
+```php
+$backupDatabase = EzPhpMysqlBackUp::getInstance([
+    "db_name" => "your_db_name",
+    "ezpmb_gzip" => false,
+    "ezpmb_timezone" => 'Asia/Tehran',
+]);
+```
+get a full or conditional backup
+
+```php
+// Option-1: Backup tables already defined above
+$backupDatabase->backupTables();
+
+// Option-2: Backup changed tables only
+$since = '1 day';
+$changed = $backupDatabase->backupTablesSince($since);
 ```
 
 <!-- Roadmap -->
