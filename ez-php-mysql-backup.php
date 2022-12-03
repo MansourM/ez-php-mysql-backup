@@ -31,16 +31,20 @@ class EzPhpMysqlBackUp
     {
         if (isset($this->config[$name]))
             return $this->config[$name];
-        else
-            die("You are trying to get $name which is either inaccessible or non existing member");
+        else {
+            $this->obfPrintError("You are trying to get $name which is either inaccessible or non existing member");
+            die();
+        }
     }
 
     public function __set($name, $value)
     {
         if (isset($this->config[$name]))
             $this->config[$name] = $value;
-        else
-            die("You are trying to set $name which is either inaccessible or non existing member");
+        else {
+            $this->obfPrintError("You are trying to set $name which is either inaccessible or non existing member");
+            die();
+        }
     }
 
     private function setConfig($config)
@@ -63,6 +67,7 @@ class EzPhpMysqlBackUp
             "ezpmb_ignore_tables" => isset($_ENV["ezpmb_ignore_tables"]) ?: "",
             "ezpmb_backup_dir" => isset($_ENV["ezpmb_backup_dir"]) ?: "ezpmb_backups",
             "ezpmb_backup_file_name" => isset($_ENV["ezpmb_backup_file_name"]) ?: $dbName . '-' . date("Ymd_His", time()) . '.sql',
+            "ezpmb_backup_triggers" => isset($_ENV["ezpmb_backup_triggers"]) ? strtolower($_ENV["ezpmb_backup_triggers"]) == "true" : false,
             "ezpmb_gzip" => isset($_ENV["ezpmb_gzip"]) ? strtolower($_ENV["ezpmb_gzip"]) == "true" : true,
             "ezpmb_disable_foreign_key_checks" => isset($_ENV["ezpmb_disable_foreign_key_checks"]) ? strtolower($_ENV["ezpmb_disable_foreign_key_checks"]) : true,
             "ezpmb_batch_size" => isset($_ENV["ezpmb_batch_size"]) ? intval($_ENV["ezpmb_batch_size"]) : 1000,
@@ -162,28 +167,13 @@ class EzPhpMysqlBackUp
                             while ($row = mysqli_fetch_row($result)) {
                                 $sql .= '(';
                                 for ($j = 0; $j < $numFields; $j++) {
-                                    if (isset($row[$j])) {
-                                        $row[$j] = addslashes($row[$j]);
-                                        $row[$j] = str_replace("\n", "\\n", $row[$j]);
-                                        $row[$j] = str_replace("\r", "\\r", $row[$j]);
-                                        $row[$j] = str_replace("\f", "\\f", $row[$j]);
-                                        $row[$j] = str_replace("\t", "\\t", $row[$j]);
-                                        $row[$j] = str_replace("\v", "\\v", $row[$j]);
-                                        $row[$j] = str_replace("\a", "\\a", $row[$j]);
-                                        $row[$j] = str_replace("\b", "\\b", $row[$j]);
-                                        if ($row[$j] == 'true' or $row[$j] == 'false' or preg_match('/^-?[1-9][0-9]*$/', $row[$j]) or $row[$j] == 'NULL' or $row[$j] == 'null') {
-                                            $sql .= $row[$j];
-                                        } else {
-                                            $sql .= '"' . $row[$j] . '"';
-                                        }
-                                    } else {
-                                        $sql .= 'NULL';
-                                    }
+                                    $sql .= $this->formatValue($row[$j]);
 
                                     if ($j < ($numFields - 1))
                                         $sql .= ',';
                                 }
 
+                                //TODO Think: what if DB changes while backup is in progress
                                 if ($rowCount == $realBatchSize) {
                                     $rowCount = 0;
                                     $sql .= ");\n"; //close the insert statement
@@ -199,30 +189,7 @@ class EzPhpMysqlBackUp
                     }
                 }
 
-                /** CREATE TRIGGER */
-
-                // Check if there are some TRIGGERS associated to the table
-                /*$query = "SHOW TRIGGERS LIKE '" . $table . "%'";
-                $result = $this->conn->query($query);
-                if ($result) {
-                    $triggers = array();
-                    while ($trigger = mysqli_fetch_row ($result)) {
-                        $triggers[] = $trigger[0];
-                    }
-                    
-                    // Iterate through triggers of the table
-                    foreach ( $triggers as $trigger ) {
-                        $query= 'SHOW CREATE TRIGGER `' . $trigger . '`';
-                        $result = mysqli_fetch_array ($this->conn->query($query));
-                        $sql.= "\nDROP TRIGGER IF EXISTS `" . $trigger . "`;\n";
-                        $sql.= "DELIMITER $$\n" . $result[2] . "$$\n\nDELIMITER ;\n";
-                    }
-
-                    $sql.= "\n";
-
-                    $this->saveFile($sql);
-                    $sql = '';
-                }*/
+                $this->backUpTriggers($table);
 
                 $sql .= "\n\n";
 
@@ -249,6 +216,56 @@ class EzPhpMysqlBackUp
             return false;
         }
         return true;
+    }
+
+    //TODO: doest not work properly!
+    private function backUpTriggers($table)
+    {
+        if (!$this->ezpmb_backup_triggers)
+            return;
+        // Check if there are some TRIGGERS associated to the table
+        $triggerSql = "";
+        $query = "SHOW TRIGGERS LIKE '" . $table . "%'";
+        $result = $this->conn->query($query);
+        if ($result) {
+            $triggers = array();
+            while ($trigger = mysqli_fetch_row($result)) {
+                $triggers[] = $trigger[0];
+            }
+
+            // Iterate through triggers of the table
+            foreach ($triggers as $trigger) {
+                $query = 'SHOW CREATE TRIGGER `' . $trigger . '`';
+                $result = mysqli_fetch_array($this->conn->query($query));
+                $triggerSql .= "\nDROP TRIGGER IF EXISTS `" . $trigger . "`;\n";
+                $triggerSql .= "DELIMITER $$\n" . $result[2] . "$$\n\nDELIMITER ;\n";
+            }
+
+            $triggerSql .= "\n";
+
+            $this->saveSqlFile($triggerSql);
+        }
+    }
+
+    private function formatValue($val)
+    {
+        if (isset($val)) {
+            $val = addslashes($val);
+            $val = str_replace("\n", "\\n", $val);
+            $val = str_replace("\r", "\\r", $val);
+            $val = str_replace("\f", "\\f", $val);
+            $val = str_replace("\t", "\\t", $val);
+            $val = str_replace("\v", "\\v", $val);
+            $val = str_replace("\a", "\\a", $val);
+            $val = str_replace("\b", "\\b", $val);
+            if ($val == 'true' or $val == 'false' or preg_match('/^-?[1-9][0-9]*$/', $val) or $val == 'NULL' or $val == 'null') {
+                return $val;
+            } else {
+                return '"' . $val . '"';
+            }
+        } else {
+            return 'NULL';
+        }
     }
 
     //checks if foreign_key_checks==true (only for current session)
