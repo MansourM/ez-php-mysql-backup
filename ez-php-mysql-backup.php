@@ -494,7 +494,6 @@ class EzPhpMysqlBackUp
 
         $tables = [];
         for ($i = 0; $i < count($resultSet); $i++) {
-            var_export($resultSet[$i]);
             if (in_array($resultSet[$i]['TABLE_NAME'], $this->parseTablesString($this->ezpmb_ignore_tables)))
                 continue;
             if (strtotime('-' . $since) < strtotime($resultSet[$i]['update_time']))
