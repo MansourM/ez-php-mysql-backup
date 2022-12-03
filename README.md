@@ -23,7 +23,8 @@ based on it.
 
 ## :toolbox: Getting Started
 
-Simply upload myphp-backup.php script to the DocumentRoot directory of your web application via FTP or other method and run it accessing http://www.example.com/myphp-backup.php. You can also run it from command line.
+Simply upload myphp-backup.php script to the DocumentRoot directory of your web application via FTP or other method and
+run it accessing http://www.example.com/myphp-backup.php. You can also run it from command line.
 <!-- Prerequisites -->
 
 ### :bangbang: Prerequisites
@@ -38,14 +39,15 @@ add the library to your code
 
 ```php
 <?php
-// Optional - Report all errors
+// Optional - DevOnly - Report all errors
 error_reporting(E_ALL);
 // Optional - Set script max execution time
 set_time_limit(900); // 15 minutes
 // Import the lib
 require_once "ez-php-mysql-backup.php";
 ```
-Initialize
+
+Initialize with your custom config or use default settings
 
 ```php
 $backupDatabase = EzPhpMysqlBackUp::getInstance([
@@ -54,6 +56,7 @@ $backupDatabase = EzPhpMysqlBackUp::getInstance([
     "ezpmb_timezone" => 'Asia/Tehran',
 ]);
 ```
+
 get a full or conditional backup
 
 ```php
@@ -69,8 +72,15 @@ $changed = $backupDatabase->backupTablesSince($since);
 
 ## :compass: Roadmap
 
-* [x] Todo 1
-* [ ] Todo 2
+* [ ] add changes from the main libs to this part
+* [ ] Better readme
+* [ ] Fix triggers
+* [ ] Either add wait then direct download or some kind of hook to return download link after the backup is finished.
+* [ ] read and get a better understanding on some parts like what happens if tablesa are being updated mid-backup and
+  how best to handle it.
+* [ ] More testing.
+* [ ] Code Optimizations.
+* [ ] Performance Optimizations.
 
 <!-- Contributing -->
 

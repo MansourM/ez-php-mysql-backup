@@ -1,5 +1,5 @@
 <?php
-//TODO add custom logging
+//TODO logs on error needs a \n before sometimes!?
 
 class EzPhpMysqlBackUp
 {
