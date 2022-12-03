@@ -4,26 +4,22 @@ error_reporting(E_ALL);
 // Set script max execution time
 set_time_limit(900); // 15 minutes
 
+
 require_once "ez-php-mysql-backup.php";
 
 // Initialize
 $backupDatabase = EzPhpMysqlBackUp::getInstance([
     "db_name" => "morghiran-eggs",
     "ezpmb_gzip" => false,
+    "ezpmb_timezone" => 'Asia/Tehran',
 ]);
 
 // Option-1: Backup tables already defined above
-$backupDatabase->backupTables();
+//$backupDatabase->backupTables();
 
 // Option-2: Backup changed tables only - uncomment block below
-/*
 $since = '1 day';
-$changed = $backupDatabase->getChangedTables($since);
-if(!$changed){
-  $backupDatabase->obfPrint('No tables modified since last ' . $since . '! Quitting..', 1);
-  die();
-}
-*/
+$changed = $backupDatabase->backupTablesSince($since);
 
 // Download the result
 /*$fileName = $backupDatabase->getBackupFileName();

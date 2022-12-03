@@ -63,6 +63,7 @@ class EzPhpMysqlBackUp
             "db_passwd" => isset($_ENV["db_passwd"]) ?: "",
             "db_name" => $dbName,
             "db_charset" => isset($_ENV["db_charset"]) ?: "utf8",
+            "ezpmb_timezone" => isset($_ENV["db_charset"]) ?: false,
             "ezpmb_backup_tables" => isset($_ENV["ezpmb_backup_tables"]) ?: "*",
             "ezpmb_ignore_tables" => isset($_ENV["ezpmb_ignore_tables"]) ?: "",
             "ezpmb_backup_dir" => isset($_ENV["ezpmb_backup_dir"]) ?: "ezpmb_backups",
@@ -81,6 +82,8 @@ class EzPhpMysqlBackUp
             $this->config = $defaultConfig;
         else
             $this->config = array_merge($defaultConfig, $config);
+        if ($this->ezpmb_timezone)
+            date_default_timezone_set($this->ezpmb_timezone);
     }
 
     private function setConnection()
@@ -105,27 +108,42 @@ class EzPhpMysqlBackUp
     }
 
     //TODO: test with null and stuff
-    //format = * OR table1, table2, ...
-    private function getTables($backupTablesString, $ignoreTablesString)
+    private function getTables()
     {
         $tables = [];
-        if ($backupTablesString == '*') {
+        if ($this->ezpmb_backup_tables == '*') {
             $result = $this->conn->query('SHOW TABLES');
             while ($row = mysqli_fetch_row($result))
                 $tables[] = $row[0];
         } else
-            $tables = explode(',', str_replace(' ', '', $backupTablesString));
-        return array_diff($tables, explode(',', str_replace(' ', '', $ignoreTablesString)));
+            $tables = $this->parseTablesString($this->ezpmb_backup_tables);
+        return array_diff($tables, $this->parseTablesString($this->ezpmb_ignore_tables));
     }
 
-    public function backupTables()
+    /** format = * OR table1, table2, ... */
+    private function parseTablesString($tablesString)
+    {
+        return explode(',', str_replace(' ', '', $tablesString));
+    }
+
+    /** strtotime valid string */
+    public function backupTablesSince($since = '1 day')
+    {
+        return $this->backupTables($this->getChangedTables($since), $since);
+    }
+
+    public function backupTables($tablesArr = null, $since = "beginning of time")
     {
         $this->wrapInDiv();
-        $this->obfPrint("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= .:Starting backup:. =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=", false);
+        $this->obfPrint("=-=-=-=-=-=-=-=-=-=-=-=-= .:Starting backup since $since:. =-=-=-=-=-=-=-=-=-=-=-=-=", false);
+        if ($tablesArr === false) {
+            $this->obfPrint("No tables modified since last $since");
+            return false;
+        }
         $this->obfPrint("$this->ezpmb_backup_dir/$this->ezpmb_backup_file_name");
         $this->lineBreak();
         try {
-            $tables = $this->getTables($this->ezpmb_backup_tables, $this->ezpmb_ignore_tables);
+            $tables = $tablesArr ?: $this->getTables();
             $sql = 'CREATE DATABASE IF NOT EXISTS `' . $this->db_name . '`' . ";\n\n";
             $sql .= 'USE `' . $this->db_name . "`;\n\n";
 
@@ -464,23 +482,24 @@ class EzPhpMysqlBackUp
     }
 
     /** Returns array of changed tables since duration */
-    public function getChangedTables($since = '1 day')
+    private function getChangedTables($since = '1 day')
     {
-        $query = "SELECT TABLE_NAME,update_time FROM information_schema.tables WHERE table_schema='$this->db_name'";
-
+        $query = "SELECT TABLE_NAME, update_time FROM information_schema.tables WHERE table_schema='$this->db_name'";
         $result = $this->conn->query($query);
+        $resultSet = [];
         while ($row = mysqli_fetch_assoc($result))
-            $resultset[] = $row;
+            $resultSet[] = $row;
 
-        if (empty($resultset)) return false;
+        if (empty($resultSet)) return false;
 
         $tables = [];
-        for ($i = 0; $i < count($resultset); $i++) {
-            if (in_array($resultset[$i]['TABLE_NAME'], IGNORE_TABLES)) // ignore this table
+        for ($i = 0; $i < count($resultSet); $i++) {
+            var_export($resultSet[$i]);
+            if (in_array($resultSet[$i]['TABLE_NAME'], $this->parseTablesString($this->ezpmb_ignore_tables)))
                 continue;
-            if (strtotime('-' . $since) < strtotime($resultset[$i]['update_time']))
-                $tables[] = $resultset[$i]['TABLE_NAME'];
+            if (strtotime('-' . $since) < strtotime($resultSet[$i]['update_time']))
+                $tables[] = $resultSet[$i]['TABLE_NAME'];
         }
-        return ($tables) ?: false;
+        return $tables ?: false;
     }
 }
