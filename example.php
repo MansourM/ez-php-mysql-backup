@@ -28,6 +28,7 @@ if(!$changed){
 
 // Use $output variable for further processing, for example to send it by email
 $output = $backupDatabase->getLog();
+$backupDatabase->loge("error!");
 
 
 

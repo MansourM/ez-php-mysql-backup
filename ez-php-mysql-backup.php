@@ -67,10 +67,9 @@ class EzPhpMysqlBackUp
             "ezpmb_disable_foreign_key_checks" => isset($_ENV["ezpmb_disable_foreign_key_checks"]) ? strtolower($_ENV["ezpmb_disable_foreign_key_checks"]) : true,
             "ezpmb_batch_size" => isset($_ENV["ezpmb_batch_size"]) ? intval($_ENV["ezpmb_batch_size"]) : 1000,
             "ezpmb_download" => isset($_ENV["ezpmb_download"]) ? strtolower($_ENV["ezpmb_download"]) == "true" : false, //Immediately start downloading the result
-            "ezpmb_log_dir" => isset($_ENV["log_dir"]) ?: "ezpmb_backups/logs",
-            "ezpmb_all_log" => isset($_ENV["all_log"]) ? strtolower($_ENV["all_log"]) == "true" : true,
-            "ezpmb_error_log" => isset($_ENV["error_log"]) ? strtolower($_ENV["error_log"]) == "true" : true,
-            "ezpmb_file_log" => isset($_ENV["file_log"]) ? strtolower($_ENV["file_log"]) == "true" : false,
+            "ezpmb_log_dir" => isset($_ENV["ezpmb_log_dir"]) ?: "ezpmb_backups/logs",
+            "ezpmb_log_all" => isset($_ENV["ezpmb_log_all"]) ? strtolower($_ENV["ezpmb_log_all"]) == "true" : true,
+            "ezpmb_log_error" => isset($_ENV["ezpmb_log_error"]) ? strtolower($_ENV["ezpmb_log_error"]) == "true" : true,
         ];
 
         if ($config == null)
@@ -245,13 +244,10 @@ class EzPhpMysqlBackUp
             }
         } catch (Exception $e) {
             $this->lineBreak();
-            $this->obfPrintWithDots("Backup");
-            $this->obfPrint("ERROR", false);
-            $this->obfPrint($e->getMessage());
-            $this->wrapInDiv(false);
+            $this->obfPrintError("Backup ERROR:");
+            $this->obfPrintError($e->getMessage(), false);
             return false;
         }
-        $this->wrapInDiv(false);
         return true;
     }
 
@@ -280,14 +276,16 @@ class EzPhpMysqlBackUp
         return $this->saveFile($this->ezpmb_backup_dir, $this->ezpmb_backup_file_name, $sql);
     }
 
-    private function saveLogFile(&$text)
+    private function saveLogFile(&$text, $isError)
     {
-        if ($this->ezpmb_all_log)
-            return $this->saveFile($this->ezpmb_log_dir, "_all.log", $text);
+        if ($this->ezpmb_log_all)
+            $this->saveFile($this->ezpmb_log_dir, "all.log", $text);
+        if ($isError && $this->ezpmb_log_error)
+            $this->saveFile($this->ezpmb_log_dir, "error.log", $text);
     }
 
     //TODO why & ?
-    private function saveFile($dir, $fileName, &$text)
+    private function saveFile($dir, $fileName, $text)
     {
         if (!$text) return false;
 
@@ -298,8 +296,8 @@ class EzPhpMysqlBackUp
             //TODO: optimize this for big file sizes? can crash stop executing because of RAM, Time, etc
             file_put_contents("$dir/$fileName", $text, FILE_APPEND | LOCK_EX);
         } catch (Exception $e) {
-            print_r($e->getMessage());
-            $this->obfPrint('FAILED', false);
+            $this->obfPrintError('Saving File catch!');
+            $this->obfPrintError($e->getMessage());
             return false;
         }
         return true;
@@ -333,11 +331,11 @@ class EzPhpMysqlBackUp
 
             gzclose($fpOut);
             if (!unlink($source)) {
-                $this->obfPrint('Failed', false);
+                $this->obfPrintError('Gzipping Failed 1');
                 return false;
             }
         } else {
-            $this->obfPrint('Failed', false);
+            $this->obfPrintError('Gzipping Failed 2');
             return false;
         }
 
@@ -347,13 +345,28 @@ class EzPhpMysqlBackUp
 
     public function log($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
     {
-        $this->wrapInDiv();
         $this->obfPrint($msg, $attachCurrentTimeStamp, $lineBreaks);
-        $this->wrapInDiv(false);
+    }
+
+    /** log error */
+    public function loge($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
+    {
+        $this->obfPrintError($msg, $attachCurrentTimeStamp, $lineBreaks);
+    }
+
+    private function obfPrint($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
+    {
+        $this->ezPrint(false, $msg, $attachCurrentTimeStamp, $lineBreaks,);
+    }
+
+    private function obfPrintError($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
+    {
+        $this->ezPrint(true, "Error in: $this->ezpmb_backup_dir/$this->ezpmb_backup_file_name", $attachCurrentTimeStamp, $lineBreaks);
+        $this->ezPrint(true, $msg, $attachCurrentTimeStamp, $lineBreaks);
     }
 
     /** Prints message forcing output buffer flush */
-    private function obfPrint($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
+    private function ezPrint($isError, $msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
     {
         //TODO: handle download better
         if ($this->ezpmb_download)
@@ -364,7 +377,7 @@ class EzPhpMysqlBackUp
             $Output = date("Y-m-d H:i:s") . ' - ';
 
         $Output .= $msg . $this->lineBreak($lineBreaks, false);
-        $this->saveLogFile($Output);
+        $this->saveLogFile($Output, $isError);
         $this->log .= $Output;
 
         echo $Output;
