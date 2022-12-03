@@ -4,7 +4,7 @@ class EzPhpMysqlBackUp
 {
     private static $instance;
     private $config;
-    private $conn;
+    private mysqli $conn;
     private $output;
 
     public static function getInstance($config = null)
@@ -110,14 +110,13 @@ class EzPhpMysqlBackUp
     public function backupTables()
     {
         try {
+            $sessionForeignKeyChecks = $this->getForeignKeyChecks();
             $tables = $this->getTables($this->ezpmb_backup_tables, $this->ezpmb_ignore_tables);
 
             $sql = 'CREATE DATABASE IF NOT EXISTS `' . $this->db_name . '`' . ";\n\n";
             $sql .= 'USE `' . $this->db_name . "`;\n\n";
 
-            if ($this->ezpmb_disable_foreign_key_checks === true)
-                $sql .= "SET foreign_key_checks = 0;\n\n";
-
+            $sql .= $this->getSetForeignKeyChecksString($sessionForeignKeyChecks);
 
             foreach ($tables as $table) {
                 $this->obfPrint("Backing up `$table` table..." . str_repeat('.', 50 - strlen($table)), 0, 0);
@@ -226,12 +225,8 @@ class EzPhpMysqlBackUp
                 $this->obfPrint('OK');
             }
 
-            /**
-             * Re-enable foreign key checks
-             */
-            //TODO: is it possible that this is wrong? maybe db had turned it off before by default?
-            if ($this->ezpmb_disable_foreign_key_checks === true)
-                $sql .= "SET foreign_key_checks = 1;\n";
+            /** Resets foreign key checks */
+            $sql .= $this->getSetForeignKeyChecksString($sessionForeignKeyChecks, true);
 
             $this->saveFile($sql);
 
@@ -244,6 +239,21 @@ class EzPhpMysqlBackUp
             return false;
         }
         return true;
+    }
+
+    //checks if foreign_key_checks==true (only for current session)
+    private function getForeignKeyChecks()
+    {
+        return mysqli_fetch_row($this->conn->query("SHOW Variables WHERE Variable_name='foreign_key_checks'"))[1] == "ON";
+    }
+
+    private function getSetForeignKeyChecksString($sessionValue, $reset = false)
+    {
+        if ($sessionValue == $this->ezpmb_disable_foreign_key_checks)
+            return "\n";
+        if ($reset)
+            return "SET foreign_key_checks = " . ($sessionValue ? 1 : 0) . ";\n\n";
+        return "SET foreign_key_checks = " . ($this->ezpmb_disable_foreign_key_checks ? 1 : 0) . ";\n\n";
     }
 
     /**

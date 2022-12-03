@@ -3,6 +3,8 @@
 error_reporting(E_ALL);
 // Set script max execution time
 set_time_limit(900); // 15 minutes
+$sessionForeignKeyChecks = true;
+die("SET foreign_key_checks = " . ($sessionForeignKeyChecks ? 1 : 0) . ";\n");
 require_once "ez-php-mysql-backup.php";
 
 /*if (php_sapi_name() != "cli")
@@ -13,6 +15,8 @@ $backupDatabase = EzPhpMysqlBackUp::getInstance([
     "ezpmb_download" => true,
 ]);
 
+$backupDatabase->getForeignKeyChecks();
+die("done.");
 // Option-1: Backup tables already defined above
 $result = $backupDatabase->backupTables() ? 'OK' : 'KO';
 
