@@ -1,11 +1,14 @@
 <?php
+//TODO add custom logging
 
 class EzPhpMysqlBackUp
 {
     private static $instance;
     private $config;
     private mysqli $conn;
-    private $output;
+    private $log;
+
+    public static int $DOT_LENGTH = 60;
 
     public static function getInstance($config = null)
     {
@@ -21,7 +24,7 @@ class EzPhpMysqlBackUp
     {
         $this->setConfig($config);
         $this->setConnection();
-        $this->output = "";
+        $this->log = "";
     }
 
     public function __get($name)
@@ -109,29 +112,26 @@ class EzPhpMysqlBackUp
 
     public function backupTables()
     {
+        $this->wrapInDiv();
+        $this->obfPrint("Starting backup: $this->ezpmb_backup_dir/$this->ezpmb_backup_file_name");
+        $this->lineBreak();
         try {
-            $sessionForeignKeyChecks = $this->getForeignKeyChecks();
             $tables = $this->getTables($this->ezpmb_backup_tables, $this->ezpmb_ignore_tables);
-
             $sql = 'CREATE DATABASE IF NOT EXISTS `' . $this->db_name . '`' . ";\n\n";
             $sql .= 'USE `' . $this->db_name . "`;\n\n";
 
+            $sessionForeignKeyChecks = $this->getForeignKeyChecks();
             $sql .= $this->getSetForeignKeyChecksString($sessionForeignKeyChecks);
 
             foreach ($tables as $table) {
-                $this->obfPrint("Backing up `$table` table..." . str_repeat('.', 50 - strlen($table)), 0, 0);
+                $this->obfPrintWithDots("Backing up `$table` table");
 
-                /**
-                 * CREATE TABLE
-                 */
+                /** CREATE TABLE */
                 $sql .= 'DROP TABLE IF EXISTS `' . $table . '`;';
                 $row = mysqli_fetch_row($this->conn->query('SHOW CREATE TABLE `' . $table . '`'));
                 $sql .= "\n\n" . $row[1] . ";\n\n";
 
-                /**
-                 * INSERT INTO
-                 */
-
+                /** INSERT INTO */
                 $row = mysqli_fetch_row($this->conn->query('SELECT COUNT(*) FROM `' . $table . '`'));
                 $numRows = $row[0];
 
@@ -146,8 +146,10 @@ class EzPhpMysqlBackUp
                     $numFields = mysqli_num_fields($result);
 
                     //TODO i dont think this check is required
-                    // unless we are trying to count for changes while backup process is running
-                    // in that case we need to be way more careful and and a lot more checks and stuff
+                    // unless we are trying to account for changes while backup process is running
+                    // in that case we need to be way more careful and do a lot more checks and stuff
+                    // we could just lock each table before backing up if consistency is uper important
+                    // but there should be way better ways to handle it
                     if ($realBatchSize !== 0) {
                         $sql .= 'INSERT INTO `' . $table . '` VALUES ';
 
@@ -193,9 +195,7 @@ class EzPhpMysqlBackUp
                     }
                 }
 
-                /**
-                 * CREATE TRIGGER
-                 */
+                /** CREATE TRIGGER */
 
                 // Check if there are some TRIGGERS associated to the table
                 /*$query = "SHOW TRIGGERS LIKE '" . $table . "%'";
@@ -222,22 +222,31 @@ class EzPhpMysqlBackUp
 
                 $sql .= "\n\n";
 
-                $this->obfPrint('OK');
+                $this->obfPrint('OK', false);
             }
 
             /** Resets foreign key checks */
             $sql .= $this->getSetForeignKeyChecksString($sessionForeignKeyChecks, true);
 
+            //TODO check return?
             $this->saveFile($sql);
 
             if ($this->ezpmb_gzip)
                 $this->gzipBackupFile();
-            else
-                $this->obfPrint("Backup file succesfully saved to $this->ezpmb_backup_dir/$this->ezpmb_backup_file_name", 1, 1);
+            else {
+                $this->lineBreak();
+                $this->obfPrintWithDots("Backup");
+                $this->obfPrint("OK", false);
+            }
         } catch (Exception $e) {
-            print_r($e->getMessage());
+            $this->lineBreak();
+            $this->obfPrintWithDots("Backup");
+            $this->obfPrint("ERROR", false);
+            $this->obfPrint($e->getMessage());
+            $this->wrapInDiv(false);
             return false;
         }
+        $this->wrapInDiv(false);
         return true;
     }
 
@@ -262,22 +271,27 @@ class EzPhpMysqlBackUp
      */
     protected function saveFile(&$sql)
     {
+        //TODO add output here
         if (!$sql) return false;
+
+        $dest = $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
 
         try {
             if (!file_exists($this->ezpmb_backup_dir))
                 mkdir($this->ezpmb_backup_dir, 0777, true);
 
-            file_put_contents($this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name, $sql, FILE_APPEND | LOCK_EX);
+            //TODO: optimize this for big file sizes? can crash stop executing because of RAM, Time, etc
+            file_put_contents($dest, $sql, FILE_APPEND | LOCK_EX);
 
         } catch (Exception $e) {
             print_r($e->getMessage());
+            $this->obfPrint('FAILED', false);
             return false;
         }
         return true;
     }
 
-    /*
+    /**
      * Gzip backup file
      *
      * @param integer $level GZIP compression level (default: 9)
@@ -290,7 +304,9 @@ class EzPhpMysqlBackUp
         $source = $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
         $dest = $source . '.gz';
 
-        $this->obfPrint("Gzipping backup file to $dest ... ", 1, 0);
+        $this->lineBreak();
+        $this->obfPrint("Gzipping backup file:");
+        $this->obfPrintWithDots($dest);
 
         $mode = 'wb' . $level;
         if ($fpOut = gzopen($dest, $mode)) {
@@ -302,63 +318,87 @@ class EzPhpMysqlBackUp
                 return false;
 
             gzclose($fpOut);
-            if (!unlink($source))
+            if (!unlink($source)) {
+                $this->obfPrint('Failed', false);
                 return false;
-        } else
+            }
+        } else {
+            $this->obfPrint('Failed', false);
             return false;
+        }
 
-        $this->obfPrint('OK');
+        $this->obfPrint('OK', false);
         return $dest;
     }
 
-    /**
-     * Prints message forcing output buffer flush
-     *
-     */
-    public function obfPrint($msg = '', $lineBreaksBefore = 0, $lineBreaksAfter = 1)
+    public function log($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
+    {
+        $this->wrapInDiv();
+        $this->obfPrint($msg, $attachCurrentTimeStamp, $lineBreaks);
+        $this->wrapInDiv(false);
+        //TODO (public version of obfPrint)
+    }
+
+    /** Prints message forcing output buffer flush */
+    private function obfPrint($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
+    {
+        //TODO: handle download better
+        if ($this->ezpmb_download)
+            return;
+
+        $Output = '';
+        if ($attachCurrentTimeStamp)
+            $Output = date("Y-m-d H:i:s") . ' - ';
+
+        $Output .= $msg . $this->lineBreak($lineBreaks, false);
+        $this->log .= $Output;
+
+        echo $Output;
+        if (php_sapi_name() != "cli")
+            if (ob_get_level() > 0)
+                ob_flush();
+        flush();
+    }
+
+    /** Prints message forcing output buffer flush */
+    private function obfPrintWithDots($msg = '', $lineBreaks = 0, $attachCurrentTimeStamp = true)
+    {
+        $this->obfPrint($msg . str_repeat('.', self::$DOT_LENGTH - strlen($msg)), $attachCurrentTimeStamp, $lineBreaks);
+    }
+
+    public function lineBreak($count = 1, $echo = true)
     {
         if ($this->ezpmb_download)
             return;
 
-        if ($msg != 'OK' and $msg != 'KO')
-            $msg = date("Y-m-d H:i:s") . ' - ' . $msg;
+        $Output = str_repeat("\n", $count);
 
-        $output = '';
-
-        if (php_sapi_name() != "cli")
-            $lineBreak = "<br />";
-        else
-            $lineBreak = "\n";
-
-        for ($i = 0; $i < $lineBreaksBefore; $i++)
-            $output .= $lineBreak;
-
-        $output .= $msg;
-
-        for ($i = 0; $i < $lineBreaksAfter; $i++)
-            $output .= $lineBreak;
-
-        // Save output for later use
-        $this->output .= str_replace('<br />', '\n', $output);
-
-        echo $output;
-
-        if (php_sapi_name() != "cli")
-            if (ob_get_level() > 0)
-                ob_flush();
-
-        $this->output .= " ";
-
-        flush();
+        if ($echo)
+            echo $Output;
+        return $Output;
     }
 
-    /**
-     * Returns full execution output
-     *
-     */
-    public function getOutput()
+    public function wrapInDiv($start = true, $echo = true)
     {
-        return $this->output;
+        if ($this->ezpmb_download || php_sapi_name() == "cli")
+            return;
+
+        if ($start)
+            $Output = '<div style="font-family: monospace;white-space: pre-wrap;">';
+        else
+            $Output = '</div>';
+
+        if ($echo)
+            echo $Output;
+        return $Output;
+    }
+
+    //TODO think ...
+
+    /** Returns full execution output */
+    public function getLog()
+    {
+        return $this->log;
     }
 
     public function getBackupFilePath()
@@ -379,10 +419,7 @@ class EzPhpMysqlBackUp
         return $this->ezpmb_backup_dir;
     }
 
-    /**
-     * Returns array of changed tables since duration
-     *
-     */
+    /** Returns array of changed tables since duration */
     public function getChangedTables($since = '1 day')
     {
         $query = "SELECT TABLE_NAME,update_time FROM information_schema.tables WHERE table_schema='$this->db_name'";
