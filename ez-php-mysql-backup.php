@@ -67,6 +67,10 @@ class EzPhpMysqlBackUp
             "ezpmb_disable_foreign_key_checks" => isset($_ENV["ezpmb_disable_foreign_key_checks"]) ? strtolower($_ENV["ezpmb_disable_foreign_key_checks"]) : true,
             "ezpmb_batch_size" => isset($_ENV["ezpmb_batch_size"]) ? intval($_ENV["ezpmb_batch_size"]) : 1000,
             "ezpmb_download" => isset($_ENV["ezpmb_download"]) ? strtolower($_ENV["ezpmb_download"]) == "true" : false, //Immediately start downloading the result
+            "ezpmb_log_dir" => isset($_ENV["log_dir"]) ?: "ezpmb_backups/logs",
+            "ezpmb_all_log" => isset($_ENV["all_log"]) ? strtolower($_ENV["all_log"]) == "true" : true,
+            "ezpmb_error_log" => isset($_ENV["error_log"]) ? strtolower($_ENV["error_log"]) == "true" : true,
+            "ezpmb_file_log" => isset($_ENV["file_log"]) ? strtolower($_ENV["file_log"]) == "true" : false,
         ];
 
         if ($config == null)
@@ -113,7 +117,8 @@ class EzPhpMysqlBackUp
     public function backupTables()
     {
         $this->wrapInDiv();
-        $this->obfPrint("Starting backup: $this->ezpmb_backup_dir/$this->ezpmb_backup_file_name");
+        $this->obfPrint("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= .:Starting backup:. =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=", false);
+        $this->obfPrint("$this->ezpmb_backup_dir/$this->ezpmb_backup_file_name");
         $this->lineBreak();
         try {
             $tables = $this->getTables($this->ezpmb_backup_tables, $this->ezpmb_ignore_tables);
@@ -190,7 +195,7 @@ class EzPhpMysqlBackUp
                             }
                         }
 
-                        $this->saveFile($sql);
+                        $this->saveSqlFile($sql);
                         $sql = '';
                     }
                 }
@@ -229,7 +234,7 @@ class EzPhpMysqlBackUp
             $sql .= $this->getSetForeignKeyChecksString($sessionForeignKeyChecks, true);
 
             //TODO check return?
-            $this->saveFile($sql);
+            $this->saveSqlFile($sql);
 
             if ($this->ezpmb_gzip)
                 $this->gzipBackupFile();
@@ -269,20 +274,29 @@ class EzPhpMysqlBackUp
      * Save SQL to file
      * @param string $sql
      */
-    protected function saveFile(&$sql)
+    //TODO why protected?
+    protected function saveSqlFile(&$sql)
     {
-        //TODO add output here
-        if (!$sql) return false;
+        return $this->saveFile($this->ezpmb_backup_dir, $this->ezpmb_backup_file_name, $sql);
+    }
 
-        $dest = $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
+    private function saveLogFile(&$text)
+    {
+        if ($this->ezpmb_all_log)
+            return $this->saveFile($this->ezpmb_log_dir, "_all.log", $text);
+    }
+
+    //TODO why & ?
+    private function saveFile($dir, $fileName, &$text)
+    {
+        if (!$text) return false;
 
         try {
-            if (!file_exists($this->ezpmb_backup_dir))
-                mkdir($this->ezpmb_backup_dir, 0777, true);
+            if (!file_exists($dir))
+                mkdir($dir, 0777, true);
 
             //TODO: optimize this for big file sizes? can crash stop executing because of RAM, Time, etc
-            file_put_contents($dest, $sql, FILE_APPEND | LOCK_EX);
-
+            file_put_contents("$dir/$fileName", $text, FILE_APPEND | LOCK_EX);
         } catch (Exception $e) {
             print_r($e->getMessage());
             $this->obfPrint('FAILED', false);
@@ -336,7 +350,6 @@ class EzPhpMysqlBackUp
         $this->wrapInDiv();
         $this->obfPrint($msg, $attachCurrentTimeStamp, $lineBreaks);
         $this->wrapInDiv(false);
-        //TODO (public version of obfPrint)
     }
 
     /** Prints message forcing output buffer flush */
@@ -351,6 +364,7 @@ class EzPhpMysqlBackUp
             $Output = date("Y-m-d H:i:s") . ' - ';
 
         $Output .= $msg . $this->lineBreak($lineBreaks, false);
+        $this->saveLogFile($Output);
         $this->log .= $Output;
 
         echo $Output;
