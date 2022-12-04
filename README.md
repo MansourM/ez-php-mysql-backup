@@ -98,6 +98,13 @@ $backupDatabase->backupTablesSince($since);
 * [ ] my-php-restore?
 * [ ] better comments/docs
 
+<!-- Known Issues -->
+
+## :warning: Known Issues
+
+* error logs needs a \n before, sometimes!
+* backUpTriggers does not always work properly
+
 <!-- Contributing -->
 
 ## :wave: Contributing

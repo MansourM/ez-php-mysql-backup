@@ -1,5 +1,4 @@
 <?php
-//TODO logs on error needs a \n before sometimes!?
 
 class EzPhpMysqlBackUp
 {
@@ -236,7 +235,6 @@ class EzPhpMysqlBackUp
         return true;
     }
 
-    //TODO: doest not work properly!
     private function backUpTriggers($table)
     {
         if (!$this->ezpmb_backup_triggers)
@@ -311,7 +309,7 @@ class EzPhpMysqlBackUp
         return $this->saveFile($this->ezpmb_backup_dir, $this->ezpmb_backup_file_name, $sql);
     }
 
-    private function saveLogFile(&$text, $isError)
+    private function saveLogFile($text, $isError)
     {
         if ($this->ezpmb_log_all)
             $this->saveFile($this->ezpmb_log_dir, "all.log", $text);
@@ -319,7 +317,6 @@ class EzPhpMysqlBackUp
             $this->saveFile($this->ezpmb_log_dir, "error.log", $text);
     }
 
-    //TODO why & ?
     private function saveFile($dir, $fileName, $text)
     {
         if (!$text) return false;
@@ -454,8 +451,6 @@ class EzPhpMysqlBackUp
             echo $Output;
         return $Output;
     }
-
-    //TODO think ...
 
     /** Returns full execution output */
     public function getLog()
