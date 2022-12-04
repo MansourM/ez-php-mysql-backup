@@ -23,8 +23,8 @@ based on it.
 
 ## :toolbox: Getting Started
 
-Simply upload myphp-backup.php script to the DocumentRoot directory of your web application via FTP or other method and
-run it accessing http://www.example.com/myphp-backup.php. You can also run it from command line.
+Simply upload myphp-backup.php script to the DocumentRoot directory of your web application via FTP or other methods and
+run it by accessing http://www.example.com/myphp-backup.php. You can also run it from the command line.
 <!-- Prerequisites -->
 
 ### :bangbang: Prerequisites
@@ -72,28 +72,28 @@ $backupDatabase->backupTablesSince($since);
 
 ## :compass: Changes from Parent / Roadmap
 
-* [x] Library uses singleton pattern.
-* [x] bugfixes, code clean-up and other minor improvements.
-* [x] broke down bigger functions into smaller ones while adding some helpers functions.
-* [x] improved configuration, now can read from .env/constructor and has default values (used to read from php constants).
+* [x] Singleton pattern.
+* [x] bug fixes, code clean-up, and other minor improvements.
+* [x] broke down bigger functions into smaller ones while adding some helper functions.
+* [x] improved configuration, now can read from .env/constructor and has default values (used to read from PHP constants).
 * [x] new config options.
 * [x] added magic methods to access configs.
 * [x] added log files (all/error) and improved print/output functions.
 * [x] bumped to PHP v5.4 mostly so I can use short array syntax :)
 * [ ] .env.example
-* [ ] config section in readme
+* [ ] add config section to the readme
 * [ ] cli.php
 * [ ] Better readme
 * [ ] Fix triggers
-* [ ] Either add wait then direct download or some kind of hook to return download link after the backup is finished.
-* [ ] read and get a better understanding on some parts like what happens if tablesa are being updated mid-backup and
+* [ ] Either add wait then direct download or some kind of hook to return the download link after the backup is finished.
+* [ ] read and get a better understanding of some parts like what happens if tables are being updated mid-backup and
   how best to handle it.
 * [ ] More testing.
 * [ ] Code Optimizations.
 * [ ] Performance Optimizations.
 * [ ] mysqldump?
 * [ ] my-php-restore?
-* [ ] better comments / docs
+* [ ] better comments/docs
 
 <!-- Contributing -->
 
