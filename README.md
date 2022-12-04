@@ -1,6 +1,7 @@
 <div align="center">
-  <h1>EZ PHP MySQL backup</h1>
-  <h2>Simple and fast MySQL backups using PHP</h2>
+<img src="image/ezpmb_128x512.png" alt="logo" width="512" height="128" />
+  <!--<h1>EZ PHP MySQL backup</h1>-->
+  <p>Simple and fast MySQL backups using PHP</p>
 </div>
 
 <br />
@@ -75,19 +76,21 @@ $backupDatabase->backupTablesSince($since);
 * [x] Singleton pattern.
 * [x] bug fixes, code clean-up, and other minor improvements.
 * [x] broke down bigger functions into smaller ones while adding some helper functions.
-* [x] improved configuration, now can read from .env/constructor and has default values (used to read from PHP constants).
+* [x] improved configuration, now can read from .env/constructor and has default values (used to read from PHP
+  constants).
 * [x] new config options.
 * [x] added magic methods to access configs.
 * [x] added log files (all/error) and improved print/output functions.
-* [x] bumped to PHP v5.4 mostly so I can use short array syntax :)
+* [x] bumped to PHP v5.4 (mostly so I can use short array syntax :)
+* [x] Better readme
 * [ ] .env.example
 * [ ] add config section to the readme
 * [ ] cli.php
-* [ ] Better readme
 * [ ] Fix triggers
-* [ ] Either add wait then direct download or some kind of hook to return the download link after the backup is finished.
-* [ ] read and get a better understanding of some parts like what happens if tables are being updated mid-backup and
-  how best to handle it.
+* [ ] Either add wait then direct download or some kind of hook to return the download link after the backup is
+  finished.
+* [ ] read and get a better understanding of some parts like what happens if tables are being updated mid-backup and how
+  best to handle it.
 * [ ] More testing.
 * [ ] Code Optimizations.
 * [ ] Performance Optimizations.
