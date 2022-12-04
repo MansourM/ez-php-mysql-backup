@@ -132,7 +132,7 @@ class EzPhpMysqlBackUp
         return $this->backupTables($this->getChangedTables($since), $since);
     }
 
-    public function backupTables($tablesArr = null, $since = "beginning of time")
+    public function backupTables($tablesArr = null, $since = "Forever")
     {
         $this->wrapInDiv();
         $this->obfPrint("=-=-=-=-=-=-=-=-=-=-=-=-= .:Starting backup since $since:. =-=-=-=-=-=-=-=-=-=-=-=-=", false);
