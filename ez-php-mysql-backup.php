@@ -169,8 +169,8 @@ class EzPhpMysqlBackUp
 
                     $query = 'SELECT * FROM `' . $table . '` LIMIT ' . ($b * $this->ezpmb_batch_size - $this->ezpmb_batch_size) . ',' . $this->ezpmb_batch_size;
                     $result = $this->conn->query($query);
-                    $realBatchSize = $result->num_rows(); // Last batch size can be different from $this->batchSize
-                    $numFields = $result->num_fields();
+                    $realBatchSize = $result->num_rows; // Last batch size can be different from $this->batchSize
+                    $numFields = $result->field_count;
 
                     //TODO i dont think this check is required
                     // unless we are trying to account for changes while backup process is running
