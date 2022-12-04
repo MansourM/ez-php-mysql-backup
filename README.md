@@ -83,14 +83,14 @@ $backupDatabase->backupTablesSince($since);
 * [x] added log files (all/error) and improved print/output functions.
 * [x] bumped to PHP v5.4 (mostly so I can use short array syntax :)
 * [x] Better readme
+* [x] direct download feature
 * [ ] .env.example
 * [ ] add config section to the readme
 * [ ] cli.php
 * [ ] Fix triggers
-* [ ] Either add wait then direct download or some kind of hook to return the download link after the backup is
-  finished.
 * [ ] read and get a better understanding of some parts like what happens if tables are being updated mid-backup and how
   best to handle it.
+* [ ] test download on large file size / check interaction with execution_time and consider adding a fileReady hook to pass the download link
 * [ ] More testing.
 * [ ] Code Optimizations.
 * [ ] Performance Optimizations.

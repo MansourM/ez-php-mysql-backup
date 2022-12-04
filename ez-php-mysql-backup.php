@@ -200,16 +200,12 @@ class EzPhpMysqlBackUp
                                 $rowCount++;
                             }
                         }
-
                         $this->saveSqlFile($sql);
                         $sql = '';
                     }
                 }
-
                 $this->backUpTriggers($table);
-
                 $sql .= "\n\n";
-
                 $this->obfPrint('OK', false);
             }
 
@@ -232,6 +228,7 @@ class EzPhpMysqlBackUp
             $this->obfPrintError($e->getMessage(), false);
             return false;
         }
+        $this->download();
         return true;
     }
 
@@ -256,9 +253,7 @@ class EzPhpMysqlBackUp
                 $triggerSql .= "\nDROP TRIGGER IF EXISTS `" . $trigger . "`;\n";
                 $triggerSql .= "DELIMITER $$\n" . $result[2] . "$$\n\nDELIMITER ;\n";
             }
-
             $triggerSql .= "\n";
-
             $this->saveSqlFile($triggerSql);
         }
     }
@@ -274,14 +269,13 @@ class EzPhpMysqlBackUp
             $val = str_replace("\v", "\\v", $val);
             $val = str_replace("\a", "\\a", $val);
             $val = str_replace("\b", "\\b", $val);
-            if ($val == 'true' or $val == 'false' or preg_match('/^-?[1-9][0-9]*$/', $val) or $val == 'NULL' or $val == 'null') {
+            if ($val == 'true' or $val == 'false' or preg_match('/^-?[1-9][0-9]*$/', $val) or $val == 'NULL' or $val == 'null')
                 return $val;
-            } else {
+            else
                 return '"' . $val . '"';
-            }
-        } else {
+        } else
             return 'NULL';
-        }
+
     }
 
     //checks if foreign_key_checks==true (only for current session)
@@ -347,6 +341,7 @@ class EzPhpMysqlBackUp
 
         $source = $this->ezpmb_backup_dir . '/' . $this->ezpmb_backup_file_name;
         $dest = $source . '.gz';
+        $this->ezpmb_backup_file_name .= '.gz';
 
         $this->lineBreak();
         $this->obfPrint("Gzipping backup file:");
@@ -375,6 +370,20 @@ class EzPhpMysqlBackUp
         return $dest;
     }
 
+    private function download()
+    {
+        if (!$this->ezpmb_download) return;
+
+        if ($this->ezpmb_gzip)
+            header("Content-Type: application/gzip");
+        else
+            header("Content-Type: application/sql");
+        //header("Content-Description: File Transfer");
+        header("Content-disposition: attachment; filename=$this->ezpmb_backup_file_name");
+        $this->obfPrint("Downloading file ... ");
+        readfile(getcwd() . "/ezpmb_backups/$this->ezpmb_backup_file_name");
+    }
+
     public function log($msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
     {
         $this->obfPrint($msg, $attachCurrentTimeStamp, $lineBreaks);
@@ -400,10 +409,6 @@ class EzPhpMysqlBackUp
     /** Prints message forcing output buffer flush */
     private function ezPrint($isError, $msg = '', $attachCurrentTimeStamp = true, $lineBreaks = 1)
     {
-        //TODO: handle download better
-        if ($this->ezpmb_download)
-            return;
-
         $Output = '';
         if ($attachCurrentTimeStamp)
             $Output = date("Y-m-d H:i:s") . ' - ';
@@ -411,6 +416,8 @@ class EzPhpMysqlBackUp
         $Output .= $msg . $this->lineBreak($lineBreaks, false);
         $this->saveLogFile($Output, $isError);
         $this->log .= $Output;
+
+        if ($this->ezpmb_download) return;
 
         echo $Output;
         if (php_sapi_name() != "cli")
@@ -427,28 +434,21 @@ class EzPhpMysqlBackUp
 
     public function lineBreak($count = 1, $echo = true)
     {
-        if ($this->ezpmb_download)
-            return;
-
         $Output = str_repeat("\n", $count);
-
-        if ($echo)
-            echo $Output;
+        if ($echo) echo $Output;
         return $Output;
     }
 
     public function wrapInDiv($start = true, $echo = true)
     {
-        if ($this->ezpmb_download || php_sapi_name() == "cli")
-            return;
+        if ($this->ezpmb_download || php_sapi_name() == "cli") return;
 
         if ($start)
             $Output = '<div style="font-family: monospace;white-space: pre-wrap;">';
         else
             $Output = '</div>';
 
-        if ($echo)
-            echo $Output;
+        if ($echo) echo $Output;
         return $Output;
     }
 
@@ -465,10 +465,9 @@ class EzPhpMysqlBackUp
 
     public function getBackupFileName()
     {
-        if ($this->ezpmb_gzip) {
+        if ($this->ezpmb_gzip)
             return $this->ezpmb_backup_file_name . '.gz';
-        } else
-            return $this->ezpmb_backup_file_name;
+        return $this->ezpmb_backup_file_name;
     }
 
     public function getBackupDir()

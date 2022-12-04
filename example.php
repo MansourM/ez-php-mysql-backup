@@ -9,7 +9,8 @@ require_once "ez-php-mysql-backup.php";
 // Initialize
 $backupDatabase = EzPhpMysqlBackUp::getInstance([
     "db_name" => "morghiran-eggs",
-    "ezpmb_gzip" => false,
+    "ezpmb_gzip" => true,
+    "ezpmb_download" => true,
     "ezpmb_timezone" => 'Asia/Tehran',
 ]);
 
@@ -19,23 +20,4 @@ $backupDatabase->backupTables();
 // Option-2: Backup changed tables only
 //$since = '1 day';
 //$backupDatabase->backupTablesSince($since);
-
-// Download the result
-/*$fileName = $backupDatabase->getBackupFileName();
-$filePath = $backupDatabase->getBackupFilePath();
-if (!file_exists($filePath))
-    die('file not found');
-$f = fopen($filePath, "r");
-
-header("Cache-Control: public");
-header("Content-Description: File Transfer");
-header("Content-Disposition: attachment; filename=$fileName");
-header("Content-Type: application/zip");
-header("Content-Transfer-Encoding: binary");
-header('Content-Length: ' . filesize($f));
-
-
-fpassthru($f);
-fclose($f);*/
-
 
