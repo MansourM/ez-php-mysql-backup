@@ -72,7 +72,14 @@ $backupDatabase->backupTablesSince($since);
 
 ## :compass: Changes from Parent / Roadmap
 
-* [ ] add changes from the main libs to this part
+* [x] Library uses singleton pattern.
+* [x] bugfixes, code clean-up and other minor improvements.
+* [x] broke down bigger functions into smaller ones while adding some helpers functions.
+* [x] improved configuration, now can read from .env/constructor and has default values (used to read from php constants).
+* [x] new config options.
+* [x] added magic methods to access configs.
+* [x] added log files (all/error) and improved print/output functions.
+* [x] bumped to PHP v5.4 mostly so I can use short array syntax :)
 * [ ] .env.example
 * [ ] config section in readme
 * [ ] cli.php
@@ -86,6 +93,7 @@ $backupDatabase->backupTablesSince($since);
 * [ ] Performance Optimizations.
 * [ ] mysqldump?
 * [ ] my-php-restore?
+* [ ] better comments / docs
 
 <!-- Contributing -->
 
