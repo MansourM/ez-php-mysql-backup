@@ -84,6 +84,7 @@ $backupDatabase->backupTablesSince($since);
 * [x] bumped to PHP v5.4 (mostly so I can use short array syntax :)
 * [x] Better readme
 * [x] direct download feature
+* [x] backup + scheduled task examples
 * [ ] .env.example
 * [ ] add config section to the readme
 * [ ] cli.php
