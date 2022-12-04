@@ -48,6 +48,7 @@ class EzPhpMysqlBackUp
 
     private function setConfig($config)
     {
+        //TODO improve
         //db_name is mandatory
         if (isset($config["db_name"]))
             $dbName = $config["db_name"];
@@ -55,6 +56,15 @@ class EzPhpMysqlBackUp
             $dbName = $_ENV["db_name"];
         else
             die("db_name not set!");
+
+        if (isset($config["ezpmb_timezone"]))
+            $TimeZone = $config["ezpmb_timezone"];
+        else if (isset($_ENV["ezpmb_timezone"]))
+            $TimeZone = $_ENV["ezpmb_timezone"];
+        else
+            $TimeZone = date_default_timezone_get();
+
+        $DefaultFileName = $dbName . (new DateTime("now", new DateTimeZone($TimeZone)))->format('Ymd_His') . ".sql";
 
         $defaultConfig = [
             "db_host" => isset($_ENV["db_host"]) ?: "localhost",
@@ -66,7 +76,7 @@ class EzPhpMysqlBackUp
             "ezpmb_backup_tables" => isset($_ENV["ezpmb_backup_tables"]) ?: "*",
             "ezpmb_ignore_tables" => isset($_ENV["ezpmb_ignore_tables"]) ?: "",
             "ezpmb_backup_dir" => isset($_ENV["ezpmb_backup_dir"]) ?: "ezpmb_backups",
-            "ezpmb_backup_file_name" => isset($_ENV["ezpmb_backup_file_name"]) ?: $dbName . '-' . date("Ymd_His", time()) . '.sql',
+            "ezpmb_backup_file_name" => isset($_ENV["ezpmb_backup_file_name"]) ?: $DefaultFileName,
             "ezpmb_backup_triggers" => isset($_ENV["ezpmb_backup_triggers"]) ? strtolower($_ENV["ezpmb_backup_triggers"]) == "true" : false,
             "ezpmb_gzip" => isset($_ENV["ezpmb_gzip"]) ? strtolower($_ENV["ezpmb_gzip"]) == "true" : true,
             "ezpmb_disable_foreign_key_checks" => isset($_ENV["ezpmb_disable_foreign_key_checks"]) ? strtolower($_ENV["ezpmb_disable_foreign_key_checks"]) : true,
@@ -81,8 +91,6 @@ class EzPhpMysqlBackUp
             $this->config = $defaultConfig;
         else
             $this->config = array_merge($defaultConfig, $config);
-        if ($this->ezpmb_timezone)
-            date_default_timezone_set($this->ezpmb_timezone);
     }
 
     private function setConnection()
