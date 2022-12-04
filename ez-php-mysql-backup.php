@@ -113,7 +113,7 @@ class EzPhpMysqlBackUp
         $tables = [];
         if ($this->ezpmb_backup_tables == '*') {
             $result = $this->conn->query('SHOW TABLES');
-            while ($row = mysqli_fetch_row($result))
+            while ($row = $result->fetch_row())
                 $tables[] = $row[0];
         } else
             $tables = $this->parseTablesString($this->ezpmb_backup_tables);
@@ -155,11 +155,11 @@ class EzPhpMysqlBackUp
 
                 /** CREATE TABLE */
                 $sql .= 'DROP TABLE IF EXISTS `' . $table . '`;';
-                $row = mysqli_fetch_row($this->conn->query('SHOW CREATE TABLE `' . $table . '`'));
+                $row = $this->conn->query('SHOW CREATE TABLE `' . $table . '`')->fetch_row();
                 $sql .= "\n\n" . $row[1] . ";\n\n";
 
                 /** INSERT INTO */
-                $row = mysqli_fetch_row($this->conn->query('SELECT COUNT(*) FROM `' . $table . '`'));
+                $row = $this->conn->query('SELECT COUNT(*) FROM `' . $table . '`')->fetch_row();
                 $numRows = $row[0];
 
                 // Split table in batches in order to not exhaust system memory 
@@ -169,8 +169,8 @@ class EzPhpMysqlBackUp
 
                     $query = 'SELECT * FROM `' . $table . '` LIMIT ' . ($b * $this->ezpmb_batch_size - $this->ezpmb_batch_size) . ',' . $this->ezpmb_batch_size;
                     $result = $this->conn->query($query);
-                    $realBatchSize = mysqli_num_rows($result); // Last batch size can be different from $this->batchSize
-                    $numFields = mysqli_num_fields($result);
+                    $realBatchSize = $result->num_rows(); // Last batch size can be different from $this->batchSize
+                    $numFields = $result->num_fields();
 
                     //TODO i dont think this check is required
                     // unless we are trying to account for changes while backup process is running
@@ -182,7 +182,7 @@ class EzPhpMysqlBackUp
 
                         for ($i = 0; $i < $numFields; $i++) {
                             $rowCount = 1;
-                            while ($row = mysqli_fetch_row($result)) {
+                            while ($row = $result->fetch_row()) {
                                 $sql .= '(';
                                 for ($j = 0; $j < $numFields; $j++) {
                                     $sql .= $this->formatValue($row[$j]);
@@ -247,14 +247,14 @@ class EzPhpMysqlBackUp
         $result = $this->conn->query($query);
         if ($result) {
             $triggers = array();
-            while ($trigger = mysqli_fetch_row($result)) {
+            while ($trigger = $result->fetch_row()) {
                 $triggers[] = $trigger[0];
             }
 
             // Iterate through triggers of the table
             foreach ($triggers as $trigger) {
                 $query = 'SHOW CREATE TRIGGER `' . $trigger . '`';
-                $result = mysqli_fetch_array($this->conn->query($query));
+                $result = $this->conn->query($query)->fetch_array();
                 $triggerSql .= "\nDROP TRIGGER IF EXISTS `" . $trigger . "`;\n";
                 $triggerSql .= "DELIMITER $$\n" . $result[2] . "$$\n\nDELIMITER ;\n";
             }
@@ -289,7 +289,7 @@ class EzPhpMysqlBackUp
     //checks if foreign_key_checks==true (only for current session)
     private function getForeignKeyChecks()
     {
-        return mysqli_fetch_row($this->conn->query("SHOW Variables WHERE Variable_name='foreign_key_checks'"))[1] == "ON";
+        return $this->conn->query("SHOW Variables WHERE Variable_name='foreign_key_checks'")->fetch_row()[1] == "ON";
     }
 
     private function getSetForeignKeyChecksString($sessionValue, $reset = false)
@@ -487,7 +487,7 @@ class EzPhpMysqlBackUp
         $query = "SELECT TABLE_NAME, update_time FROM information_schema.tables WHERE table_schema='$this->db_name'";
         $result = $this->conn->query($query);
         $resultSet = [];
-        while ($row = mysqli_fetch_assoc($result))
+        while ($row = $result->fetch_assoc())
             $resultSet[] = $row;
 
         if (empty($resultSet)) return false;
