@@ -29,7 +29,7 @@ run it accessing http://www.example.com/myphp-backup.php. You can also run it fr
 
 ### :bangbang: Prerequisites
 
-It requires PHP 5.4 or later.
+* PHP 5.4 or later.
 
 <!-- Usage -->
 
@@ -65,14 +65,17 @@ $backupDatabase->backupTables();
 
 // Option-2: Backup changed tables only
 $since = '1 day';
-$changed = $backupDatabase->backupTablesSince($since);
+$backupDatabase->backupTablesSince($since);
 ```
 
 <!-- Roadmap -->
 
-## :compass: Roadmap
+## :compass: Changes from Parent / Roadmap
 
 * [ ] add changes from the main libs to this part
+* [ ] .env.example
+* [ ] config section in readme
+* [ ] cli.php
 * [ ] Better readme
 * [ ] Fix triggers
 * [ ] Either add wait then direct download or some kind of hook to return download link after the backup is finished.
@@ -81,6 +84,8 @@ $changed = $backupDatabase->backupTablesSince($since);
 * [ ] More testing.
 * [ ] Code Optimizations.
 * [ ] Performance Optimizations.
+* [ ] mysqldump?
+* [ ] my-php-restore?
 
 <!-- Contributing -->
 

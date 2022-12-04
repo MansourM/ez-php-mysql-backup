@@ -8,7 +8,7 @@ require_once "ez-php-mysql-backup.php";
 
 // Initialize
 $backupDatabase = EzPhpMysqlBackUp::getInstance([
-    "db_name" => "your_db_name",
+    "db_name" => "morghiran-eggs",
     "ezpmb_gzip" => false,
     "ezpmb_timezone" => 'Asia/Tehran',
 ]);
@@ -17,8 +17,8 @@ $backupDatabase = EzPhpMysqlBackUp::getInstance([
 $backupDatabase->backupTables();
 
 // Option-2: Backup changed tables only
-$since = '1 day';
-$changed = $backupDatabase->backupTablesSince($since);
+//$since = '1 day';
+//$backupDatabase->backupTablesSince($since);
 
 // Download the result
 /*$fileName = $backupDatabase->getBackupFileName();
