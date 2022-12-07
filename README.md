@@ -24,8 +24,7 @@ based on it.
 
 ## :toolbox: Getting Started
 
-Simply upload myphp-backup.php script to the DocumentRoot directory of your web application via FTP or other methods and
-run it by accessing http://www.example.com/myphp-backup.php. You can also run it from the command line.
+Simply upload ez-php-mysql-backup.php file to the DocumentRoot directory of your web application via FTP or other methods and follow the Usage section.
 <!-- Prerequisites -->
 
 ### :bangbang: Prerequisites
